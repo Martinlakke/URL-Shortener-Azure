@@ -1,22 +1,18 @@
-# Entorno virtual de Python
+# Python
 venv/
-
-# Archivos de caché de Python
 __pycache__/
 *.pyc
 
-# Variables de entorno (secretos)
+# Secretos y configuración local
 .env
 
-# Archivos del editor
+# Editor y sistema
 .vscode/
-
-# Sistema operativo
 .DS_Store
 
-# Binarios descargados
-kubectl
-kind
-
-# Ignorar zonas de seguridad de Windows
-*:Zone.Identifier
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
