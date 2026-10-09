@@ -1,0 +1,22 @@
+# Entorno virtual de Python
+venv/
+
+# Archivos de caché de Python
+__pycache__/
+*.pyc
+
+# Variables de entorno (secretos)
+.env
+
+# Archivos del editor
+.vscode/
+
+# Sistema operativo
+.DS_Store
+
+# Binarios descargados
+kubectl
+kind
+
+# Ignorar zonas de seguridad de Windows
+*:Zone.Identifier

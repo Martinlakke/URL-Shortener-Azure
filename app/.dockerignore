@@ -1,0 +1,20 @@
+# Entorno virtual (se reinstala dentro del contenedor)
+venv/
+
+# Git
+.git/
+.gitignore
+
+# Caché de Python
+__pycache__/
+*.pyc
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Editor
+.vscode/
+
+# Secretos
+.env

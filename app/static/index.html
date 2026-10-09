@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acortador de URLs</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --ink: #1C2421;
+    --muted: #5F6B66;
+    --forest: #1F4D40;
+    --leaf: #3A8F6C;
+    --mist: #EEF5F1;
+    --line: #D6E4DC;
+    --error: #B42318;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101614;
+      --ink: #E6EEEA;
+      --muted: #9AA8A2;
+      --forest: #7CC4A2;
+      --leaf: #7CC4A2;
+      --mist: #18221F;
+      --line: #2A3833;
+      --error: #F97066;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+    background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 17px; line-height: 1.5;
+  }
+  main { flex: 1; width: 100%; max-width: 640px; margin: 0 auto; padding: 18vh 24px 48px; }
+  h1 { font-size: 2.4rem; line-height: 1.1; letter-spacing: -0.02em; color: var(--forest); margin: 0 0 8px; }
+  .lead { color: var(--muted); margin: 0 0 32px; }
+
+  form { display: flex; gap: 10px; }
+  label { position: absolute; left: -9999px; }
+  input {
+    flex: 1; min-width: 0; font: inherit; color: var(--ink); background: var(--bg);
+    padding: 14px 16px; border: 1.5px solid var(--line); border-radius: 10px;
+  }
+  input:focus { outline: none; border-color: var(--leaf); box-shadow: 0 0 0 3px color-mix(in srgb, var(--leaf) 25%, transparent); }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer; border: 0; border-radius: 10px;
+    padding: 14px 22px; background: var(--forest); color: var(--bg);
+  }
+  button:hover { filter: brightness(1.1); }
+  button:focus-visible { outline: 3px solid var(--leaf); outline-offset: 2px; }
+  button:disabled { opacity: 0.6; cursor: wait; }
+
+  .result {
+    margin-top: 24px; padding: 18px 20px; border-radius: 10px; background: var(--mist);
+    display: none; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .result.show { display: flex; }
+  .result a { color: var(--forest); font-weight: 600; font-size: 1.15rem; word-break: break-all; text-decoration: none; }
+  .result a:hover { text-decoration: underline; }
+  .result .original { display: block; color: var(--muted); font-size: 0.85rem; word-break: break-all; margin-top: 2px; }
+  .copy { background: transparent; color: var(--forest); border: 1.5px solid var(--forest); padding: 9px 16px; white-space: nowrap; }
+  .error { color: var(--error); margin: 14px 0 0; min-height: 1.5em; }
+
+  footer { color: var(--muted); font-size: 0.85rem; text-align: center; padding: 24px; }
+  footer a { color: inherit; }
+
+  @media (max-width: 520px) {
+    main { padding-top: 10vh; }
+    form, .result.show { flex-direction: column; align-items: stretch; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Acortador de URLs</h1>
+  <p class="lead">Pega un enlace largo y obtén uno corto para compartir.</p>
+
+  <form id="form" novalidate>
+    <label for="url">URL a acortar</label>
+    <input id="url" name="url" type="text" inputmode="url" autocomplete="off"
+           placeholder="https://ejemplo.com/un/enlace/muy/largo" required>
+    <button id="submit" type="submit">Acortar</button>
+  </form>
+
+  <p class="error" id="error" role="alert"></p>
+
+  <div class="result" id="result" aria-live="polite">
+    <div>
+      <a id="short" href="#" target="_blank" rel="noopener"></a>
+      <span class="original" id="original"></span>
+    </div>
+    <button class="copy" id="copy" type="button">Copiar</button>
+  </div>
+</main>
+
+<footer>
+  Hecho con FastAPI, PostgreSQL, Docker y Kubernetes.
+  <a href="https://github.com/Martinlakke/URL-Shortener">Código en GitHub</a>
+</footer>
+
+<script>
+  const form = document.getElementById("form");
+  const input = document.getElementById("url");
+  const submit = document.getElementById("submit");
+  const errorBox = document.getElementById("error");
+  const result = document.getElementById("result");
+  const shortLink = document.getElementById("short");
+  const original = document.getElementById("original");
+  const copyBtn = document.getElementById("copy");
+
+  // Si el usuario no escribe http(s)://, se añade https:// para que la redirección funcione
+  function normalizar(texto) {
+    const limpio = texto.trim();
+    return /^https?:\/\//i.test(limpio) ? limpio : "https://" + limpio;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorBox.textContent = "";
+    result.classList.remove("show");
+
+    const url = normalizar(input.value);
+    try { new URL(url); } catch {
+      errorBox.textContent = "Esa URL no es válida. Revisa que esté bien escrita.";
+      return;
+    }
+
+    submit.disabled = true;
+    submit.textContent = "Acortando…";
+    try {
+      const resp = await fetch("/acortar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+      });
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      const data = await resp.json();
+      shortLink.textContent = data.url_corta;
+      shortLink.href = data.url_corta;
+      original.textContent = url;
+      copyBtn.textContent = "Copiar";
+      result.classList.add("show");
+    } catch {
+      errorBox.textContent = "No se ha podido acortar. Comprueba que la API y la base de datos están arrancadas.";
+    } finally {
+      submit.disabled = false;
+      submit.textContent = "Acortar";
+    }
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(shortLink.textContent);
+      copyBtn.textContent = "Copiado";
+    } catch {
+      copyBtn.textContent = "Cópialo a mano";
+    }
+  });
+</script>
+</body>
+</html>
