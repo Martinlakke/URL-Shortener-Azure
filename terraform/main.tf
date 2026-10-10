@@ -22,3 +22,18 @@ module "network" {
   resource_group_name = azurerm_resource_group.app.name
   tags                = local.tags
 }
+
+resource "random_string" "suffix" {
+  length  = 5
+  special = false
+  upper   = false
+}
+
+resource "azurerm_container_registry" "this" {
+  name                = "acrurlshortener${random_string.suffix.result}"
+  resource_group_name = azurerm_resource_group.app.name
+  location            = var.location
+  sku                 = "Basic"
+  admin_enabled       = false
+  tags                = local.tags
+}
