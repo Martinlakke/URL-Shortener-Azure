@@ -13,3 +13,12 @@ resource "azurerm_resource_group" "app" {
   location = var.location
   tags     = local.tags
 }
+
+module "network" {
+  source = "./modules/network"
+
+  name_suffix         = local.name_suffix
+  location            = var.location
+  resource_group_name = azurerm_resource_group.app.name
+  tags                = local.tags
+}
