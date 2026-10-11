@@ -115,4 +115,8 @@ resource "azurerm_container_app" "api" {
     azurerm_role_assignment.app_acr_pull,
     azurerm_role_assignment.app_kv_secrets,
   ]
+
+  lifecycle {
+    ignore_changes = [template[0].container[0].image]
+  }
 }

@@ -1,0 +1,40 @@
+name: Desplegar en Azure
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v5
+
+      - name: Entrar en Azure (OIDC, sin claves)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Entrar en el registro de imágenes
+        run: az acr login --name ${{ vars.ACR_NAME }}
+
+      - name: Construir y subir la imagen
+        run: |
+          IMAGE=${{ vars.ACR_NAME }}.azurecr.io/urlshortener-api:${{ github.sha }}
+          docker build -t $IMAGE ./app
+          docker push $IMAGE
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
+      - name: Desplegar la nueva versión
+        run: |
+          az config set extension.use_dynamic_install=yes_without_prompt
+          az containerapp update \
+            --name ${{ vars.CONTAINER_APP_NAME }} \
+            --resource-group ${{ vars.RESOURCE_GROUP }} \
+            --image $IMAGE

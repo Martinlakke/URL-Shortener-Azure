@@ -21,3 +21,15 @@ output "db_fqdn" {
 output "app_url" {
   value = "https://${azurerm_container_app.api.ingress[0].fqdn}"
 }
+
+output "github_client_id" {
+  value = azurerm_user_assigned_identity.github.client_id
+}
+
+output "tenant_id" {
+  value = data.azurerm_client_config.current.tenant_id
+}
+
+output "subscription_id" {
+  value = data.azurerm_client_config.current.subscription_id
+}

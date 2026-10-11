@@ -21,3 +21,9 @@ variable "image_tag" {
   type        = string
   default     = "v2"
 }
+
+variable "github_repo" {
+  description = "Repositorio de GitHub que puede desplegar (usuario/repo)"
+  type        = string
+  default     = "Martinlakke/URL-Shortener-Azure"
+}
