@@ -16,6 +16,7 @@ DB_CONFIG = {
     "dbname": os.getenv("DB_NAME", "urlshortener"),
     "user": os.getenv("DB_USER", "admin"),
     "password": os.getenv("DB_PASSWORD", "secreto123"),
+    "sslmode": os.getenv("DB_SSLMODE", "prefer"),
 }
 
 BASE_URL = os.getenv("BASE_URL")
