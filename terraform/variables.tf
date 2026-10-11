@@ -15,3 +15,9 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "image_tag" {
+  description = "Versión de la imagen de la app a desplegar"
+  type        = string
+  default     = "v2"
+}

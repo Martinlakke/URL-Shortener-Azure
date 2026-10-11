@@ -26,6 +26,7 @@ resource "azurerm_subnet" "db" {
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.this.name
   address_prefixes     = [var.db_subnet_prefix]
+  service_endpoints    = ["Microsoft.Storage"]
 
   delegation {
     name = "postgres"
@@ -71,3 +72,4 @@ resource "azurerm_subnet_network_security_group_association" "db" {
   subnet_id                 = azurerm_subnet.db.id
   network_security_group_id = azurerm_network_security_group.db.id
 }
+
