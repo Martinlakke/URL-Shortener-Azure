@@ -70,3 +70,16 @@ resource "azurerm_key_vault_secret" "db_password" {
 
   depends_on = [azurerm_role_assignment.kv_secrets_me]
 }
+
+module "database" {
+  source = "./modules/database"
+
+  name_suffix         = local.name_suffix
+  unique_suffix       = random_string.suffix.result
+  location            = var.location
+  resource_group_name = azurerm_resource_group.app.name
+  vnet_id             = module.network.vnet_id
+  subnet_id           = module.network.db_subnet_id
+  admin_password      = random_password.db.result
+  tags                = local.tags
+}
