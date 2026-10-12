@@ -22,11 +22,14 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Entrar en el registro de imágenes
-        run: az acr login --name ${{ vars.ACR_NAME }}
+        run: |
+          ACR=$(az acr list --resource-group ${{ vars.RESOURCE_GROUP }} --query "[0].name" -o tsv)
+          echo "ACR=$ACR" >> $GITHUB_ENV
+          az acr login --name $ACR
 
       - name: Construir y subir la imagen
         run: |
-          IMAGE=${{ vars.ACR_NAME }}.azurecr.io/urlshortener-api:${{ github.sha }}
+          IMAGE=$ACR.azurecr.io/urlshortener-api:${{ github.sha }}
           docker build -t $IMAGE ./app
           docker push $IMAGE
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV

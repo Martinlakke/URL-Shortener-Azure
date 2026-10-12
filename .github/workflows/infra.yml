@@ -1,0 +1,76 @@
+name: Infraestructura (Terraform)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Qué hacer"
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+        default: plan
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+  ARM_USE_OIDC: "true"
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v5
+
+      - name: Instalar Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Entrar en Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Encender la base de datos si está parada
+        run: |
+          for server in $(az postgres flexible-server list --resource-group ${{ vars.RESOURCE_GROUP }} --query "[?state=='Stopped'].name" -o tsv 2>/dev/null || true); do
+            az postgres flexible-server start --name $server --resource-group ${{ vars.RESOURCE_GROUP }}
+          done
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform plan
+        if: inputs.action == 'plan'
+        run: terraform plan
+
+      - name: Terraform destroy
+        if: inputs.action == 'destroy'
+        run: terraform destroy -auto-approve
+
+      - name: "Apply 1/3: crear el registro de imágenes"
+        if: inputs.action == 'apply'
+        run: terraform apply -auto-approve -target=azurerm_container_registry.this
+
+      - name: "Apply 2/3: construir y subir la imagen"
+        if: inputs.action == 'apply'
+        run: |
+          ACR=$(az acr list --resource-group ${{ vars.RESOURCE_GROUP }} --query "[0].name" -o tsv)
+          az acr login --name $ACR
+          docker build -t $ACR.azurecr.io/urlshortener-api:${{ github.sha }} ../app
+          docker push $ACR.azurecr.io/urlshortener-api:${{ github.sha }}
+
+      - name: "Apply 3/3: crear el resto de la infraestructura"
+        if: inputs.action == 'apply'
+        run: terraform apply -auto-approve -var "image_tag=${{ github.sha }}"
