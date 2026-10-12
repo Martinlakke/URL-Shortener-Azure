@@ -2,6 +2,8 @@
 
 Es el mismo acortador de URLs de [URL-Shortener](https://github.com/Martinlakke/URL-Shortener), que primero monté en AWS con Kubernetes. Aquí lo he llevado a Azure, pero esta vez con servicios gestionados y corrigiendo las cosas que en el primero hice regular: el estado de Terraform en local, la contraseña en un Secret de Kubernetes, las claves de AWS guardadas en GitHub...
 
+![La web funcionando en Azure](docs/URL-Shortener.png)
+
 ## Cómo está montado
 
 ```mermaid
