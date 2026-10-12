@@ -27,3 +27,12 @@ variable "github_repo" {
   type        = string
   default     = "Martinlakke@35890712/URL-Shortener-Azure@1412295921"
 }
+
+variable "kv_admin_object_ids" {
+  description = "Identidades que pueden gestionar los secretos de Key Vault"
+  type        = map(string)
+  default = {
+    marc     = "c3c424aa-f497-4841-b865-fee5d9d4cbdc"
+    pipeline = "818fa1ef-3d2e-4642-a0a3-907ff3f1101c"
+  }
+}

@@ -57,10 +57,11 @@ resource "azurerm_key_vault" "this" {
   tags                       = local.tags
 }
 
-resource "azurerm_role_assignment" "kv_secrets_me" {
+resource "azurerm_role_assignment" "kv_secrets_admins" {
+  for_each             = var.kv_admin_object_ids
   scope                = azurerm_key_vault.this.id
   role_definition_name = "Key Vault Secrets Officer"
-  principal_id         = data.azurerm_client_config.current.object_id
+  principal_id         = each.value
 }
 
 resource "azurerm_key_vault_secret" "db_password" {
@@ -68,7 +69,8 @@ resource "azurerm_key_vault_secret" "db_password" {
   value        = random_password.db.result
   key_vault_id = azurerm_key_vault.this.id
 
-  depends_on = [azurerm_role_assignment.kv_secrets_me]
+  depends_on = [azurerm_role_assignment.kv_secrets_admins]
+  
 }
 
 module "database" {
